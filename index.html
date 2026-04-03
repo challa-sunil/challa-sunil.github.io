@@ -502,8 +502,12 @@ var aiBox=document.getElementById('aiResponse');
 var aiContent=document.getElementById('aiContent');
 aiBox.style.display='block';
 aiContent.innerHTML='<div class="ai-dot"><span></span><span></span><span></span></div> Thinking about <strong>'+q+'</strong>...';
-puter.ai.chat('You are a ServiceNow expert. Answer concisely, use **bold** for key terms. Max 100 words.\n\n'+q,{model:'gpt-4o-mini'}).then(function(resp){
-var text=typeof resp==='string'?resp:((resp&&resp.message&&resp.message.content)||(resp&&resp.content)||(resp&&resp.text)||String(resp)||'No response.');
+fetch('https://openrouter.ai/api/v1/chat/completions',{
+method:'POST',
+headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+body:JSON.stringify({model:'anthropic/claude-3-haiku',messages:[{role:'user',content:'ServiceNow expert. Answer concisely, **bold** key terms. Max 100 words.\n\n'+q}]})
+}).then(function(r){return r.json();}).then(function(data){
+var text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'No response.';
 text=text.replace(/\*\*([^*]+)\*\*/g,'<strong style="color:#00ff88;font-weight:700">$1</strong>');
 text=text.replace(/`([^`]+)`/g,'<code>$1</code>');
 text=text.replace(/\n/g,'<br>');
@@ -844,11 +848,16 @@ window.askPageAI = function(q) {
   }
 
   var _msg = typeof msgContent==='string' ? msgContent : (msgContent[msgContent.length-1]&&msgContent[msgContent.length-1].text)||q;
-  var _sys = 'You are a witty warm friendly ServiceNow AI built by Sunil Challa. RULES: 1) For greetings ALWAYS reply: "Hi there! ⚡ You just unlocked **Sunil Challa**\'s **ServiceNow** brain. What\'s your question?" 2) Wrap important words in **asterisks**. 3) Max 3-4 lines, no bullet lists.';
-  puter.ai.chat(_sys + '\n\nUser: ' + _msg, {model:'gpt-4o-mini'})
-  .then(function(resp) {
-    var text = typeof resp==='string' ? resp : ((resp&&resp.message&&resp.message.content)||(resp&&resp.content)||(resp&&resp.text)||String(resp)||'');
-    if(!text){text='Sorry, could not get a response. Please try again.';}
+  fetch('https://openrouter.ai/api/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+    body:JSON.stringify({model:'anthropic/claude-3-haiku',messages:[{role:'system',content:'You are a witty warm friendly ServiceNow AI built by Sunil Challa. For greetings reply: Hi there! You just unlocked Sunil Challa ServiceNow brain. For questions give short clear answers max 4 lines. Use **bold** for key terms.'},{role:'user',content:_msg}]})
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'';
+    if(!text&&data.error){text='⚠️ '+(data.error.message||'Error. Please try again.');}
+    if(!text){text='No response. Please try again.';}
     text = text.replace(/\*\*([^*]+)\*\*/g,'<strong style="color:#00ff88;font-weight:700">$1</strong>');
     var terms=['Sunil Challa','ServiceNow','CMDB','Flow Designer','Now Assist','ITSM','IntegrationHub','Predictive Intelligence','Agent-to-Agent','Agentic AI','App Engine','HRSD','CSM','SecOps','ITOM','GRC','SPM','Update Set','Business Rule','Script Include','Client Script','GlideRecord','REST API','MID Server','CSDM','CTA','CMA','CSA','CAD','ArchX'];
     terms.forEach(function(t){var r=new RegExp('(?<!>)\\b'+t.replace(/ /g,'\\s+')+'\\b(?![^<]*>)','g');text=text.replace(r,'<strong style="color:#00ff88;font-weight:700">'+t+'</strong>');});
@@ -1043,4 +1052,3 @@ Google
 </button></div><div class="sm-tags-label">Quick Search</div><div class="sm-tags"><button class="sm-tag" onclick="doSearch('CSA')">&#x1F3AF; CSA</button><button class="sm-tag" onclick="doSearch('CAD')">&#x1F4BB; CAD</button><button class="sm-tag" onclick="doSearch('CIS HRSD')">&#x1F465; CIS-HRSD</button><button class="sm-tag" onclick="doSearch('CMDB')">&#x1F5C4; CMDB</button><button class="sm-tag" onclick="doSearch('Flow Designer')">&#x26A1; Flow Designer</button><button class="sm-tag" onclick="doSearch('Now Assist')">&#x1F916; Now Assist</button><button class="sm-tag" onclick="doSearch('Agentic AI')">&#x2728; Agentic AI</button><button class="sm-tag" onclick="doSearch('ITOM Discovery')">&#x1F4E1; Discovery</button><button class="sm-tag" onclick="doSearch('Customer Service Management')">&#x1F4AC; CSM</button><button class="sm-tag" onclick="doSearch('SecOps Vulnerability')">&#x1F6E1; SecOps</button><button class="sm-tag" onclick="doSearch('App Engine Studio')">&#x1F527; App Engine</button><button class="sm-tag" onclick="doSearch('Service Portal')">&#x1F310; Service Portal</button></div><div id="aiResponse" style="display:none;padding:0 28px 20px"><div id="aiContent" style="background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.1);border-radius:16px;padding:20px;font-size:.84rem;color:var(--text);line-height:1.8;max-height:400px;overflow-y:auto"></div></div>
 <div class="sm-footer"><div class="sm-hint">Press <kbd>Enter</kbd> to search &bull; <kbd>Esc</kbd> to close</div></div></div></div>
 <button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;bottom:80px;right:20px;width:44px;height:44px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(10,20,12,.8);backdrop-filter:blur(12px);color:var(--green);cursor:pointer;display:none;align-items:center;justify-content:center;z-index:50;transition:all .3s"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="18" height="18"><polyline points="18 15 12 9 6 15"/></svg></button>
-<script src="https://js.puter.com/v2/"></script>
